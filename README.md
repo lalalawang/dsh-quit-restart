@@ -1,5 +1,7 @@
 # dsh-quit-restart
 
+[中文](README.zh.md)
+
 Adds one row to the DSH sidebar: **Quit and restart DSH**. Click it, the app closes and comes back on its own.
 
 No tray menu, no hunting for the shortcut again.
