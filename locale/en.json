@@ -1,0 +1,10 @@
+{
+  "meta": {
+    "title": "Quit and restart"
+  },
+  "button": {
+    "label": "Quit and restart DSH",
+    "busy": "Quitting…",
+    "failed": "Restart failed"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "name": "dsh-quit-restart",
+  "version": "0.1.0",
+  "description": "Sidebar button that quits DeepSeek Harness Desktop and starts it again: kills the Electron main process and its host child, waits for both, then relaunches the app with no console window.",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "restart",
+    "quit",
+    "relaunch",
+    "desktop",
+    "plugin",
+    "cordis"
+  ],
+  "license": "MIT",
+  "author": "Allen F (lalalawang)",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale",
+    "docs",
+    "icon.svg",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lalalawang/dsh-quit-restart.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lalalawang/dsh-quit-restart/issues"
+  },
+  "homepage": "https://github.com/lalalawang/dsh-quit-restart#readme",
+  "engines": {
+    "node": ">=22.19.0",
+    "dsh": ">=0.2.2-rc.1 <0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": []
+    }
+  }
+}

@@ -1,0 +1,5 @@
+# Installs the quit-and-restart row into the sidebar footer seat.
+- insert:
+    - id: quit-restart
+      name: dsh-quit-restart
+      config: {}
