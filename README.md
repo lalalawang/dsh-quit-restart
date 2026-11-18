@@ -1,63 +1,56 @@
 # dsh-quit-restart
 
-A sidebar button that quits **DeepSeek Harness Desktop** and starts it again — one click instead of "tray → Quit → find the shortcut again".
+Adds one row to the DSH sidebar: **Quit and restart DSH**. Click it, the app closes and comes back on its own.
 
-[中文](README.zh.md)
-
-## Why
-
-DSH Desktop has no restart entry in its menus: the caption buttons and the `…` menu belong to the Electron shell, and quitting from the tray means relaunching the app by hand. This bundle adds one row to the sidebar footer that does both steps.
+No tray menu, no hunting for the shortcut again.
 
 ## Install
 
-```sh
-dsh plugin --profile <profile> add dsh-quit-restart
-```
+In the app: **Plugins → Add plugin**, then enter `dsh-quit-restart` (npm) or `https://github.com/lalalawang/dsh-quit-restart`.
 
-Then restart `dsh` once so the new bundle is scanned. With DSH Desktop, install it from the app's plugin manager if you prefer a GUI.
-
-From a checkout:
-
-```sh
-dsh plugin --profile <profile> add link:/absolute/path/dsh-quit-restart
-```
+Restart DSH once afterwards. Bundles are only scanned at startup.
 
 ## Use
 
-The row **Quit and restart DSH** sits in the sidebar footer, next to Settings. Click it: the app closes and comes back on its own. The row shows `Quitting…` until the page goes away.
+The last row of the sidebar, next to Settings. Click it: the button changes to "Quitting…", the page drops, the app starts again.
 
-Nothing else to configure. On a machine where the executable cannot be found automatically, set `DSH_QUIT_RESTART_APP_EXE` to its full path.
+Nothing to configure.
 
-## How it works
+## What it actually does
 
-**Host half** (`index.js`) registers two exact routes on the harness web server:
+On Windows it writes a one-off VBScript to `%TEMP%` and launches it with `wscript.exe`, detached, so no console window appears. The script does three things:
+
+1. `taskkill` on **two** processes: the Electron main process and the host process this plugin runs inside. Killing only the main process is not enough: the host is its child, it keeps the port, and the new instance cannot start.
+2. Polls every 250 ms to see if both PIDs are gone, for up to 10 s. If they are still there, it kills by image name.
+3. Clears the inherited `ELECTRON_RUN_AS_NODE` (otherwise the new process starts as node and shows no window), then launches the original exe.
+
+The script deletes itself when done.
+
+## Routes
 
 | Route | Purpose |
 | --- | --- |
-| `GET /api/quit-restart/status` | Reports the resolved executable, where it was found, the desktop main PID, and whether the platform is supported. |
-| `POST /api/quit-restart/restart` | Accepts `{ "dryRun": true }` to resolve only, or starts the relaunch. |
+| `GET /api/quit-restart/status` | Resolved exe path, where it was found, main PID, whether the platform is supported |
+| `POST /api/quit-restart/restart` | `{"dryRun": true}` resolves only; otherwise restarts |
 
-The restart route only answers requests from the loopback interface whose `Origin`, when present, equals the served host; anything else gets `403`. It then writes a VBScript to `%TEMP%` and starts it with `wscript.exe` — detached, no console:
+Both accept loopback requests only, and when an `Origin` header is present it must match the serving host, otherwise `403`. Non-Windows returns `501`.
 
-1. `taskkill /F /PID <main> /PID <host>` — both the Electron main process and the host process that runs this bundle.
-2. Poll `tasklist` until both PIDs are gone (up to ~10 s), then fall back to ending every process of the app image.
-3. Clear the inherited `ELECTRON_RUN_AS_NODE`, then launch the executable again.
+## If the exe path cannot be resolved
 
-Every step is journalled to `%TEMP%\dsh-quit-restart-<pid>-<ts>.log`. Killing both PIDs matters: ending only the main process leaves the host child holding the port, so the new instance cannot start.
+Normally it is derived from the parent process image, so nothing is hardcoded.
 
-**Client half** (`client.js`) registers one component into the `sidebar.footer.action` seat and posts to the route. It uses the theme's own tokens, so it follows the active skin.
+If that fails, set `DSH_QUIT_RESTART_APP_EXE` to the full path.
 
-## Safety
+## When something goes wrong
 
-- Loopback-only, same-origin POST; no token is exposed to the page.
-- The button never runs automatically — only on click.
-- The relaunched app is a normal, independent process; closing any terminal you launched DSH from does not affect it.
-- Windows only: the helper relies on `taskkill` and `wscript.exe`. Elsewhere the route answers `501` and the app must be restarted by hand.
+Logs land in `%TEMP%\dsh-quit-restart-<pid>-<timestamp>.log`, one line per stage.
+
+A "Restart failed" button usually means the kill step was denied. Check the last line of the newest log.
 
 ## Notes
 
-- Restarting drops any in-flight generation; sessions are already on disk.
-- If the row ever shows `Restart failed`, read the newest `%TEMP%\dsh-quit-restart-*.log` — it names the stage that failed.
+- Restarting drops any in-flight generation. Session records are already on disk.
+- The relaunched app is an independent process; closing the terminal you started DSH from does not affect it.
 
 ## License
 
